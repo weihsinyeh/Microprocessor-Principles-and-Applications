@@ -57,12 +57,13 @@
 
 // #pragma config statements should precede project file includes.
 // Use project enums instead of #define for ON and OFF.
-
+int rotate = 0;
+int count = 0;
 void __interrupt(high_priority)H_ISR(){
     
     //step4
-    LATD = 0;
-    LATD = ADRESH*4 + ADRESL/64;
+    rotate = 1;
+    count = ADRESH*4 + ADRESL/64;
     //do things
 
     //clear flag bit
@@ -110,7 +111,13 @@ void main(void)
     //step3
     ADCON0bits.GO = 1; //start ADC
     
-    while(1);
+    while(1){
+        if(rotate == 1){
+            for(int i = 0;i < 100;i++);
+            rotate = 0;
+            LATD = count;
+        }
+    }
     
     return;
 }

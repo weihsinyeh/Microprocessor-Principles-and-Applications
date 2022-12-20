@@ -18,8 +18,8 @@ void main(void)
     
     while(1) {
         strcpy(str, GetString()); // TODO : GetString() in uart.c
-        if(str == '\r')
-            UART_Write_Text('\n');
+        //if(str == '\r')
+            //UART_Write_Text('\n');
         //ClearBuffer();
         //UART_Write_Text(str);
     }

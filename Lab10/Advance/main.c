@@ -19,23 +19,23 @@ void main(void)
     while(1) {
         //strcpy(str, GetString()); // TODO : GetString() in uart.c
 
-            strcpy(str,GetString());
-            if(strcmp(str,"0\r")==0){
-                LATD = 0;
-                ClearBuffer();
-                UART_Write('\n');
-            }
-            else if(strcmp(str,"1\r")==0){
-                LATD = 1;
-                ClearBuffer();
-                UART_Write('\n');
-            }
-            else if(strcmp(str,"2\r")==0){ 
-                LATD = 2;
-                ClearBuffer();
-                UART_Write('\n');
-            }
-            else if(strcmp(str,"3\r")==0){
+        strcpy(str,GetString());
+        if(strcmp(str,"0\r")==0){
+            LATD = 0;
+            ClearBuffer();
+            UART_Write('\n');
+        }
+        else if(strcmp(str,"1\r")==0){
+            LATD = 1;
+            ClearBuffer();
+            UART_Write('\n');
+        }
+        else if(strcmp(str,"2\r")==0){ 
+            LATD = 2;
+            ClearBuffer();
+            UART_Write('\n');
+        }
+        else if(strcmp(str,"3\r")==0){
                 LATD = 3;
                 ClearBuffer();
                 UART_Write('\n');
@@ -97,6 +97,10 @@ void main(void)
             }
             else if(strcmp(str,"15\r")==0){
                 LATD = 15;
+                ClearBuffer();
+                UART_Write('\n');
+            }
+            else if(strcmp(str,"\r")==0){
                 ClearBuffer();
                 UART_Write('\n');
             }

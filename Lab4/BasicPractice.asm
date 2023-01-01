@@ -1,0 +1,67 @@
+LIST p=18f4520
+    #include<p18f4520.inc>
+	CONFIG OSC = INTIO67
+	CONFIG WDT = OFF
+	org 0x00
+INITIAL:
+    x1POS EQU 0x010
+    y1POS EQU 0x011
+    x2POS EQU 0x012
+    y2POS EQU 0x013
+    CLRF 0x00
+    CLRF 0x01
+    GOTO START
+NEGLF macro F
+    MOVWF F
+    NEGF F
+endm
+MUL macro dis
+    MOVFF dis,0x20
+    MOVFF dis,0x21
+    
+    NEGLF 0x20
+    NEGLF 0x21
+    
+    MOVF 0x21, WREG
+    MULWF 0x20, WREG
+    
+    MOVF 0x21, WREG
+    BTFSC 0x20, 7
+	SUBWF PRODH
+	
+    MOVF 0x20, WREG
+    BTFSC 0x21, 7
+	SUBWF PRODH
+	
+    MOVF PRODH,W
+    ADDWF 0x00
+    BTFSC STATUS,C
+	INCF 0x01
+    MOVF PRODL,W
+    ADDWF 0x01
+    endm 
+DIST macro x1,y1,x2,y2,F1,F2
+    MOVLW x1
+    MOVWF x1POS
+    MOVLW y1
+    MOVWF y1POS
+    MOVLW x2
+    MOVWF x2POS
+    MOVLW y2
+    MOVWF y2POS
+    
+    MOVFF x1POS,WREG
+    SUBWF x2POS,WREG
+    MOVFF WREG, 0x30
+    MUL 0x30
+    
+    MOVFF y1POS,WREG
+    SUBWF y2POS,WREG
+    MOVFF WREG, 0x30
+    MUL 0x30  
+endm
+START:
+    CLRF 0x00
+    CLRF 0x01
+    DIST 0x05, 0x07, 0x02, 0x03, 0x00, 0x01
+end

@@ -1,0 +1,32 @@
+LIST p=18f4520
+    #include<p18f4520.inc>
+	CONFIG OSC = INTIO67
+	CONFIG WDT = OFF
+	org 0x00
+INITIAL:
+    MOVLB 1
+    FIRST EQU 0x100
+    SECOND EQU 0x101
+    LFSR 0 ,FIRST
+    LFSR 1 ,SECOND
+    
+    COUNTER EQU 0x120
+    CLRF FIRST
+    CLRF SECOND
+    MOVLW 0x01
+    MOVWF FIRST
+    MOVLW 0x01
+    MOVWF SECOND
+    
+Fibonacci:
+    MOVFF POSTINC0,WREG
+    ADDWF POSTINC1,WREG
+    MOVWF INDF1
+    INCF COUNTER
+    MOVLW 0x07
+    SUBWF COUNTER,WREG
+    BNZ Fibonacci
+endBasic:
+    GOTO endBasic
+    
+end

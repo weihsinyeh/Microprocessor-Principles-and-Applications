@@ -50,30 +50,26 @@ BCF PORTB, 0 ;bottom is not clicked
 CLRF 0x00    ;record the the number of click
 ; ckeck button
 check_process:
-   BTFSS PORTB, 0    ;if bottom is pushed skip next line
+   BTFSC PORTB, 0    ;if bottom is pushed skip next line
    BRA check_process
 lightup:
     check1:
-	   BTG LATD, 0  
-	   INCF 0x00     
+	   BTG LATD, 0     
 	   DELAY d'50', d'180' ;delay 0.5s
 	   GOTO check2
 	   
     check2:  
 	   BTG LATD, 1   
-	   INCF 0x00    
 	   DELAY d'50', d'180' ;delay 0.5s
 	   GOTO check3
 	    
    check3: 
-	   BTG LATD, 2 
-	   INCF 0x00    
+	   BTG LATD, 2    
 	   DELAY d'50', d'180' ;delay 0.5s
 	   GOTO check4
 	   
   check4: 
-	   BTG LATD, 3  
-	   INCF 0x00    
+	   BTG LATD, 3   
 	   DELAY d'50', d'180' ;delay 0.5s
 	   GOTO nolight
    nolight:
@@ -81,8 +77,8 @@ lightup:
 	    BTG LATD, 1 
 	    BTG LATD, 2 
 	    BTG LATD, 3 
-	    CLRF 0x00
+	    BCF PORTB, 0
     lastlightup:
 	DELAY d'50', d'90' ;delay 0.25s
-	BRA lightup
+	BRA check_process
 end

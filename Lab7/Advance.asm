@@ -60,44 +60,44 @@ sec EQU D'244'
 halfsec EQU D'122'
 goto Initial			    
 ISR:				
-    org 0x08                ; ????: ?0.5??????interrupt
-    CLRF LATA               ; interrupt???LATA??
+    org 0x08                ; every 0.5 second will enter interrupt
+    CLRF LATD               ; interrupt will turn off LATA
     INCF 0x01
 test: MOVLW 0x04
     CPFSEQ 0x01
 	GOTO NOTchange
 change:
     BTFSC 0x00 , 0     
-	MOVFF 0x11,PR2 ;1?
+	MOVFF 0x11,PR2 ;1 second
     BTFSS 0x00 , 0  
-	MOVFF 0x10,PR2 ;0.5
+	MOVFF 0x10,PR2 ;0.5 second
     BTG 0x00,0
     CLRF 0x01
 NOTchange:
     BTG 0x02 , 0
-    BCF PIR1, TMR2IF        ; ??????TMR2IF?? (??flag bit)
+    BCF PIR1, TMR2IF        ; before leabing clear TMR2IF flag bit
     RETFIE
     
 Initial:			
     MOVLW 0x0F
     MOVWF ADCON1
-    CLRF TRISA
-    CLRF LATA
+    CLRF TRISD
+    CLRF LATD
     
     BSF RCON, IPEN
     BSF INTCON, GIE
-    BCF PIR1, TMR2IF		; ????TIMER2??????????TMR2IF?TMR2IE?TMR2IP?
+    BCF PIR1, TMR2IF		; to use TIMER2,set TMR2IF、TMR2IE、TMR2IP
     BSF IPR1, TMR2IP
     BSF PIE1 , TMR2IE
-    MOVLW b'11111111'	        ; ?Prescale?Postscale???1:16???????256??????TIMER2+1
-    MOVWF T2CON		; ???TIMER?????????/4????????
-    MOVLW D'122'		; ???256 * 4 = 1024?cycles???TIMER2 + 1
-    MOVWF PR2			; ??????250khz???Delay 0.5?????????125000cycles??????Interrupt
-				; ??PR2??? 125000 / 1024 = 122.0703125? ???122?
+    MOVLW b'11111111'	        ; 將Prescale與Postscale都設為1:16，意思是之後每256個週期才會將TIMER2+1
+    MOVWF T2CON		; 而由於TIMER本身會是以系統時脈/4所得到的時脈為主
+    MOVLW D'122'		; 因此每256 * 4 = 1024個cycles才會將TIMER2 + 1
+    MOVWF PR2			; 若目前時脈為250khz，想要Delay 0.5秒的話，代表每經過125000cycles需要觸發一次Interrupt
+				; 因此PR2應設為 125000 / 1024 = 122.0703125， 約等於122。
     MOVLW D'00100000'
-    MOVWF OSCCON	        ; ??????????250kHz
-    CLRF 0x00                  ; ????run?????0
-    CLRF 0x01                  ; ???run ?????
+    MOVWF OSCCON	        ; 記得將系統時脈調整成250kHz
+    CLRF 0x00                  ; 將第幾次run的數量設為0
+    CLRF 0x01                  ; 現在要run 第幾個燈泡
     MOVLW 0x01
     MOVWF 0x02                  ; need to set;
     MOVLW halfsec
@@ -111,20 +111,20 @@ main:
 zero: MOVLW 0x00
     CPFSEQ 0x01
 	GOTO one
-    BSF LATA,0
+    BSF LATD,0
     GOTO main
 one: MOVLW 0x01
     CPFSEQ 0x01
 	GOTO two
-    BSF LATA,1 
+    BSF LATD,1 
     GOTO main
 two: MOVLW 0x02
     CPFSEQ 0x01
 	GOTO three
-    BSF LATA,2
+    BSF LATD,2
     GOTO main
 three:MOVLW 0x03
-    BSF LATA,3
+    BSF LATD,3
     GOTO main
     
 end

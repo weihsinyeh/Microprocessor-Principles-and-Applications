@@ -78,45 +78,45 @@ DELAY macro num1, num2
 	DECFSZ L2, 1
 	BRA LOOP2
 endm
-goto Initial			; ????????????ISR????????
-ISR:				; Interrupt????????????
+goto Initial			
+ISR:				; Interrupt service routine
     org 0x08	
     BTG 0x00,0
     CLRF 0x01
     BCF INTCON, INT0IF
-    RETFIE                     ; ??ISR?????????????????GIE??1??????interrupt????
+    RETFIE                     ; leave ISR, return to the origin PC, and set GIE is 1,allow followed interrupt can trigger
     
-Initial:				; ????????
+Initial:				
     MOVLW 0x0F               
-    MOVWF ADCON1		; ???????????Digitial I/O 
+    MOVWF ADCON1		;set Digitial I/O 
     
-    CLRF TRISA
-    CLRF LATA
+    CLRF TRISD
+    CLRF LATD
     BSF TRISB,  0
     BCF RCON, IPEN
-    BCF INTCON, INT0IF		; ??Interrupt flag bit??
-    BSF INTCON, GIE		; ?Global interrupt enable bit??
-    BSF INTCON, INT0IE		; ?interrupt0 enable bit ?? (INT0?RB0 pin?????)
+    BCF INTCON, INT0IF		; clear Interrupt flag bit
+    BSF INTCON, GIE		; Global interrupt enable bit
+    BSF INTCON, INT0IE		; interrupt0 enable bit (INT0 and RB0 have the same pin position)
 
-    BSF 0x00,0              ; ??????0
-    CLRF 0x01                  ; ????
+    BSF 0x00,0                 ; counter set to 1
+    CLRF 0x01                  ; the number of bulb
 main:
     MOVF 0x00
-    BZ main
+    BZ main                    ; if interrupt event not happen
 start: 
-    CLRF LATA
+    CLRF LATD
     MOVF 0x00
     BZ even
 odd: ; 0 2
     MOVF 0x01
     BZ odd1
 odd2: 
-    BSF LATA,2
+    BSF LATD,2
     BTG 0x01 ,0
     DELAY  d'350' , d'180'
     GOTO start
 odd1:
-    BSF LATA,0
+    BSF LATD,0
     BTG 0x01 ,0
     DELAY  d'350' , d'180'
     GOTO start
@@ -124,12 +124,12 @@ even:
     MOVF 0x01
     BZ even1
 even2: 
-    BSF LATA,3
+    BSF LATD,3
     BTG 0x01 ,0
     DELAY  d'350' , d'180'
     GOTO start
 even1:
-    BSF LATA,1
+    BSF LATD,1
     BTG 0x01 ,0
     DELAY  d'350' , d'180'
     GOTO start

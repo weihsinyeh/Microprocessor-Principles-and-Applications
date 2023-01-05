@@ -55,84 +55,124 @@
 ; CONFIG7H
   CONFIG  EBTRB = OFF           ; Boot Block Table Read Protection bit (Boot block (000000-0007FFh) not protected from table reads executed in other blocks)
 
+sec EQU D'61'
+hsec EQU D'61'
+hhsec EQU D'30'
+SECVALUE EQU 0x10
+HSECVALUE EQU 0x11
+HHSECVALUE EQU 0x12
+HIGHINT EQU 0x20
+LOWINT EQU 0x21
     org 0x00
-sec EQU D'244'
-halfsec EQU D'122'
-goto Initial			    				
-    org 0x08                ; ????: ?0.5??????interrupt
+goto Initial	
+ 
+;HIGH PRIORITY INTERRUPT ADDRESS VECTOR				
+    org 0x08                
+    MOVLW 0x01
+    MOVWF 0x20 ; HIGHINT
+    BCF INTCON, INT0IF
+    BCF PIR1, TMR2IF 
+    RETFIE
+;LOW PRIORITY INTERRUPT ADDRESS VECTOR
+    org 0x18
+    MOVLW 0x01
+    MOVWF 0x21 ; LOWINT
+    BCF PIR1, TMR2IF 
+    RETFIE
     
-    BSF 0x02,0 ; set
-    BTFSS 0x00,0
-	GOTO increase ; 0
-decrease:
-    MOVF 0x01
-    BZ nobulb
-    DECF 0x01
-    RETFIE
-nobulb:
-    MOVLW 0x03
-    MOVWF 0x01
-    RETFIE
-increase:
-    INCF 0x01
-    MOVLW 0x04
-    CPFSLT 0x01   ;[0x01] < 4
-	CLRF 0x01 ;[0x01] = 0
-    RETFIE
-
-Initial:			
+Initial:	
+    org 0x100
     MOVLW 0x0F
     MOVWF ADCON1
-    CLRF TRISA
-    CLRF LATA
+    CLRF TRISD
+    CLRF LATD
     
-    BSF RCON, IPEN
-    BSF INTCON, GIE
-    BCF PIR1, TMR2IF		; ????TIMER2??????????TMR2IF?TMR2IE?TMR2IP?
-    BSF IPR1, TMR2IP
-    BSF PIE1 , TMR2IE
-    MOVLW b'11111111'	        ; ?Prescale?Postscale???1:16???????256??????TIMER2+1
-    MOVWF T2CON		; ???TIMER?????????/4????????
-    MOVLW D'122'		; ???256 * 4 = 1024?cycles???TIMER2 + 1
-    MOVWF PR2			; ??????250khz???Delay 0.5?????????125000cycles??????Interrupt
-				; ??PR2??? 125000 / 1024 = 122.0703125? ???122?
-    MOVLW D'00100000'
-    MOVWF OSCCON	        ; ??????????250kHz
-    CLRF 0x00                  ; ????run?????0
-    CLRF 0x01                  ; ???run ?????
-    MOVLW 0x01
-    MOVWF 0x02                  ; need to set;
-    MOVLW halfsec
-    MOVWF 0x10
-    MOVLW sec
-    MOVWF 0x11
-main:
-    MOVF 0x02                 ; if need to set got to set
-    BZ main
-    BCF 0x02 ,0
-zero: MOVLW 0x00
-    CPFSEQ 0x01
-	GOTO one
-    BSF LATA,0
-    GOTO main
-one: MOVLW 0x01
-    CPFSEQ 0x01
-	GOTO two
-    BSF LATA,1 
-    GOTO main
-two: MOVLW 0x02
-    CPFSEQ 0x01
-	GOTO three
-    BSF LATA,2
-    GOTO main
-three:MOVLW 0x03
-    BSF LATA,3
-    GOTO main
+    BSF RCON, IPEN             ; enable priority interrupt  開始接收不一樣優先權的interrupt
+    BSF INTCON, GIEH           ; enable global high interrupt
+    BSF INTCON, GIEL           ; enable global low interrupt
     
-LOW_INT_ISR:
+    BSF TRISB, 0               ; B is input
+    BSF INTCON, INT0IE         ; enable external interrupt int0
+    BCF INTCON, INT0IF        
     
-end
+    BSF PIE1 , TMR2IE          ; enable timer2
+    BCF PIR1, TMR2IF		; 為了使用TIMER2，所以要設定好相關的TMR2IF、TMR2IE、TMR2IP。
+    BCF IPR1, TMR2IP
 
+    MOVLW b'11111111'	        ; 將Prescale與Postscale都設為1:16，意思是之後每256個週期才會將TIMER2+1
+    MOVWF T2CON		; 而由於TIMER本身會是以系統時脈/4所得到的時脈為主
+    MOVLW D'244'		; 因此每256 * 4 = 1024個cycles才會將TIMER2 + 1
+    MOVWF PR2			; 若目前時脈為250khz，想要Delay 0.5秒的話，代表每經過125000cycles需要觸發一次Interrupt
+				; 因此PR2應設為 125000 / 1024 = 122.0703125， 約等於122。
+    MOVLW D'00100000'
+    MOVWF OSCCON	        ; 記得將系統時脈調整成250kHz
+    
+    MOVFF sec,SECVALUE
+    MOVFF hsec,HSECVALUE
+    MOVFF hhsec,HHSECVALUE
+    CLRF HIGHINT
+    CLRF LOWINT
+    
+    CLRF 0x00 ; if 0 : increase , 1 : decrease
+    MOVLW 0x01
+    MOVWF 0x01 ; 紀錄現在要亮哪個燈泡
+    BSF 0x02,1 ; set
+    CLRF 0x03 ; 紀錄現在的時間 0 : 1s || 1 : 0.5s || 2 : 0.25s
+main:
+    MOVF HIGHINT
+    BNZ HIGH_INT_ISR
+    MOVF LOWINT
+    BNZ LOW_INT_ISR
+    
+    MOVF 0x02	; check if need to set bulb
+    BZ main
+    CLRF 0x02 
+    MOVFF 0x01,LATD
+    GOTO main
+
+;SERVICE ROUTINE FOR HIGH PRIORITY    
+HIGH_INT_ISR:
+    CLRF HIGHINT
+timezero:
+    MOVLW 0x00
+    CPFSEQ 0x03
+	GOTO timeone
+    MOVLW D'122'
+    MOVWF PR2
+    GOTO setbulb
+timeone: 
+    MOVLW 0x01
+    CPFSEQ 0x03
+	GOTO timetwo
+    MOVLW D'61'
+    MOVWF PR2
+    GOTO setbulb
+timetwo: 
+    MOVLW D'244'
+    MOVWF PR2
+setbulb:
+    BTG 0x00,0    
+    
+;SERVICE ROUTINE FOR LOW PRIORITY 
+LOW_INT_ISR:
+    CLRF LOWINT
+    BSF 0x02,1 ; set bulb
+    BTFSS 0x00,0
+	GOTO increase ; 0
+decrease: ;1
+    BCF STATUS,C
+    RRCF 0x01
+    BNC main
+    BSF 0x01,3
+    GOTO main
+increase:
+    RLNCF 0x01
+    BTFSS 0x01 ,4
+	GOTO main
+    CLRF 0x01
+    BSF 0x01,0
+    GOTO main
+end
 
 
 
